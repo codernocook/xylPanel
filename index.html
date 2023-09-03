@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>xylPanel</title>
+        <meta name="description" content="A panel written in Nodejs (xyl)">
+
+        <style>
+            body {
+                background-color: #000;
+                color: white;
+            }
+
+            #panel {
+                display: none;
+            }
+
+            .frame {
+                display: block;
+                background-color: rgb(10, 10, 10);
+                color: white;
+                height: 280px;
+                width: 450px;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                border: 0px;
+                border-radius: 10px;
+            }
+
+            .frame_1 {
+                background-color: rgb(10, 10, 10);
+                color: white;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -55%);
+                border: 0px;
+                border-radius: 10px;
+            }
+
+            .inputBox {
+                background-color: rgb(20, 20, 20);
+                color: white;
+                border: 0px;
+                border-radius: 10px;
+            }
+
+            .connectBtn {
+                background-color: rgb(20, 20, 20);
+                color: white;
+                border: 0px;
+                border-radius: 10px;
+                width: 100px;
+                height: 30px;
+
+                position: absolute;
+                top: 98.5%;
+                left: 50%;
+                transform: translate(-50%, -97%);
+            }
+
+            .connectBtn:hover {
+                background-color: rgb(50, 50, 50);
+            }
+
+            .actionBtn {
+                background-color: rgb(20, 20, 20);
+                color: white;
+                border: 0px;
+                border-radius: 10px;
+                width: 100px;
+                height: 30px;
+
+                position: absolute;
+                top: 10px;
+                left: 10px;
+            }
+
+            .actionBtn:hover {
+                background-color: rgb(50, 50, 50);
+            }
+
+            .actionBtn1 {
+                background-color: rgb(20, 20, 20);
+                color: white;
+                border: 0px;
+                border-radius: 10px;
+                width: 100px;
+                height: 30px;
+
+                position: absolute;
+                top: 10px;
+                left: 120px;
+            }
+
+            .actionBtn1:hover {
+                background-color: rgb(50, 50, 50);
+            }
+
+            .autoScroll {
+                background-color: rgb(20, 20, 20);
+                color: white;
+                border: 0px;
+                border-radius: 10px;
+                width: 100px;
+                height: 30px;
+
+                position: absolute;
+                top: 10px;
+                left: 230px;
+            }
+
+            .autoScroll:hover {
+                background-color: rgb(50, 50, 50);
+            }
+
+            .resTerminal {
+                background-color: rgb(20, 20, 20);
+                color: white;
+                border: 0px;
+                border-radius: 10px;
+                width: 100px;
+                height: 30px;
+
+                position: absolute;
+                top: 10px;
+                left: 340px;
+            }
+
+            .resTerminal:hover {
+                background-color: rgb(50, 50, 50);
+            }
+
+            #cmdResponse {
+                background-color: rgb(0, 0, 0);
+                color: white;
+                border: 0px;
+                border-radius: 10px;
+
+                width: 0px;
+                height: 0px;
+                overflow: auto;
+                max-height: 100vh;
+
+                position: absolute;
+                top: 100px;
+                left: 120px;
+            }
+
+            #cmdInput {
+                background-color: rgb(20, 20, 20);
+                border: 0px;
+                border-radius: 10px;
+
+                width: 100px;
+                height: 30px;
+
+                position: absolute;
+                top: 0px;
+                left: 0px;
+            }
+        </style>
+
+        <!-- xterm.js library -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.19.0/css/xterm.css" />
+        <script src="https://cdn.jsdelivr.net/npm/xterm@4.19.0/lib/xterm.js"></script>
+
+        <script>
+            let webSocket = undefined;
+            let webSocket_connected = false;
+            let webSocket_authToken = undefined;
+
+            const userid_generate = (length) => {
+                let result = '';
+                const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                const charactersLength = characters.length;
+                let counter = 0;
+                while (counter < length) {
+                    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+                    counter += 1;
+                }
+
+                return result;
+            }
+
+            const userid = userid_generate(25);
+            let autoScroll = false;
+            
+            // xterm.js library
+            const term = new window.Terminal({ cursorBlink: true, cols: screen.width / 10, rows: screen.height / 20 });
+
+            const serverConnect = (ip, port, authToken) => {
+                try {
+                    webSocket = new WebSocket(`ws://${ip}:${port}`);
+
+                    webSocket.onopen = (event) => {
+                        webSocket.send(JSON.stringify({ "authToken": authToken, "userid": userid, "action": "login", "command": "" }));
+                        webSocket_authToken = authToken
+                        webSocket_connected = true;
+                    }
+
+                    webSocket.onclose = (event) => {
+                        try {
+                            if (document.getElementById('login_socket')) {
+                                document.getElementById('login_socket').style.opacity = "100%";
+                                document.getElementById('login_socket').style.display = "block";
+                                document.getElementById('panel').style.opacity = "0%";
+                                document.getElementById('panel').style.display = "none"
+                            }
+                        } catch {}
+                    }
+
+                    webSocket.onerror = (event) => {
+                        try {
+                            if (document.getElementById('login_socket')) {
+                                document.getElementById('login_socket').style.opacity = "100%";
+                                document.getElementById('login_socket').style.display = "block";
+                                document.getElementById('panel').style.opacity = "0%";
+                                document.getElementById('panel').style.display = "none"
+                            }
+                        } catch {}
+                    }
+
+                    webSocket.onmessage = (event) => {
+                        try {
+                            if (event["data"] && JSON.parse(event["data"]) && JSON.parse(event["data"])["message"] && JSON.parse(event["data"])["success"] === true) {
+                                /* Old
+                                const msgElement = document.createElement("p");
+                                msgElement.innerText = JSON.parse(event["data"])["message"]?.toString();
+                                
+                                document.getElementById("cmdResponse").appendChild(msgElement)
+                                */
+
+                                // New xterm.js
+                                term.write(JSON.parse(event["data"])["message"]?.toString());
+                                
+                                // Auto Scroll
+                                if (autoScroll === true) {
+                                    document.getElementById("cmdResponse").scrollTop = document.getElementById("cmdResponse").scrollHeight;
+                                }
+                            }
+
+                            // This allow to login
+                            if (event["data"] && JSON.parse(event["data"]) && JSON.parse(event["data"])["serverMessage"] === "logged_in") {
+                                try {
+                                    if (document.getElementById('login_socket')) {
+                                        document.getElementById('login_socket').style.opacity = "0%";
+                                        document.getElementById('login_socket').style.display = "none";
+                                        document.getElementById('panel').style.opacity = "100%";
+                                        document.getElementById('panel').style.display = "block"
+
+                                        try {
+                                            // Make it looks like gigachad
+                                            term.fit();
+                                        } catch {}
+
+                                        // Clear terminal
+                                        try {
+                                            term.reset();
+                                        } catch {}
+
+                                        // Call to add old log
+                                        webSocket.send(JSON.stringify({ "authToken": webSocket_authToken, "userid": userid, "action": "get_log", "command": "" }))
+                                    }
+                                } catch {}
+
+                                // Save cookie, if it work
+                                try {
+                                    document.cookie = `cookie=${JSON.stringify({ "ws_ip": ip ? ip?.toString() : null, "ws_port": port ? port?.toString() : null, "ws_passwd": authToken ? authToken?.toString() : null})}`;
+                                } catch {}
+                            }
+
+                            // Old log
+                            if (event["data"] && JSON.parse(event["data"]) && JSON.parse(event["data"])["message"] && JSON.parse(event["data"])["serverMessage"] === "get_log") {
+                                try {
+                                    term.write(JSON.parse(event["data"])["message"])
+                                } catch {
+                                    try {
+                                        setTimeout(() => {
+                                            term.write(JSON.parse(event["data"])["message"])
+                                        }, 1500);
+                                    } catch {}
+                                }
+                            }
+                        } catch {}
+                    }
+                } catch {
+                    try {
+                        if (document.getElementById('login_socket')) {
+                            document.getElementById('login_socket').style.opacity = "100%";
+                            document.getElementById('login_socket').style.display = "block";
+                            document.getElementById('panel').style.opacity = "0%";
+                            document.getElementById('panel').style.display = "none"
+                        }
+                    } catch {}
+                }
+            }
+
+            const sendCommand = (cmd) => {
+                // Specific command
+                if (cmd.replace(" ", "").trim() === "clear") {
+                    term.reset();
+                    return "";
+                }
+
+                if (webSocket !== undefined) {
+                    if (webSocket_connected === true) {
+                        return webSocket.send(JSON.stringify({ "authToken": webSocket_authToken, "userid": userid, "action": "cmd", "command": cmd?.toString() }));
+                    } else {
+                        return "No websocket connected!";
+                    }
+                } else {
+                    return "No websocket connected!";
+                }
+            }
+
+            const sendShutdown = () => {
+                if (webSocket !== undefined) {
+                    if (webSocket_connected === true) {
+                        webSocket.send(JSON.stringify({ "authToken": webSocket_authToken, "userid": userid, "action": "stop", "command": "" }))
+                    } else {
+                        return "No websocket connected!";
+                    }
+                } else {
+                    return "No websocket connected!";
+                }
+            }
+
+            const sendReboot = () => {
+                if (webSocket !== undefined) {
+                    if (webSocket_connected === true) {
+                        webSocket.send(JSON.stringify({ "authToken": webSocket_authToken, "userid": userid, "action": "restart", "command": "" }))
+                    } else {
+                        return "No websocket connected!";
+                    }
+                } else {
+                    return "No websocket connected!";
+                }
+            }
+
+            const sendRebootTerminal = () => {
+                if (webSocket !== undefined) {
+                    if (webSocket_connected === true) {
+                        webSocket.send(JSON.stringify({ "authToken": webSocket_authToken, "userid": userid, "action": "restart_terminal", "command": "" }))
+                    } else {
+                        return "No websocket connected!";
+                    }
+                } else {
+                    return "No websocket connected!";
+                }
+            }
+
+            const serverLoop = () => {
+                try {
+                    document.getElementById("cmdResponse").style.width = `${window.innerWidth - 120}px`;
+                    document.getElementById("cmdResponse").style.height = `${window.innerHeight - 130}px`;
+                    document.getElementById("cmdInput").style.top = `${window.innerHeight - 35}px`;
+                    document.getElementById("cmdInput").style.left = `115px`;
+                    document.getElementById("cmdInput").style.width = `${window.innerWidth - 120}px`;
+                } catch {}
+
+                // Loop
+                setTimeout(() => { serverLoop() }, 250);
+            }
+
+            serverLoop();
+
+            const onLoad = () => {
+                // Load cookie first
+                try {
+                    const cookieJSON = JSON.parse(document.cookie.split("cookie=")[1]);
+                    document.getElementById("ws_ip").value = cookieJSON["ws_ip"]?.toString();
+                    document.getElementById("ws_port").value = cookieJSON["ws_port"]?.toString();
+                    document.getElementById("ws_token").value = cookieJSON["ws_passwd"]?.toString();
+                } catch {}
+
+                // Send loaded
+                loaded = true;
+
+                // Enter after passwd
+                document.getElementById("ws_token").addEventListener("keydown", ({key}) => {
+                    if (key === "Enter") {
+                        serverConnect(document.getElementById('ws_ip').value?.toString(), document.getElementById('ws_port').value?.toString(), document.getElementById('ws_token').value?.toString());
+                    }
+                })
+
+                // cmdInput enter
+                document.getElementById("cmdInput").addEventListener("keydown", ({key}) => {
+                    if (key === "Enter") {
+                        sendCommand(document.getElementById("cmdInput").value?.toString());
+
+                        // Specific command
+                        if (document.getElementById("cmdInput").value.replace(" ", "").trim() === "clear") {
+                            try {
+                                term.reset();
+                            } catch {}
+                        }
+                        
+                        // Clear box
+                        document.getElementById("cmdInput").value = "";
+                    }
+                })
+
+                // Xterm.js loading
+                term.open(document.getElementById("cmdResponse"));
+
+                // Gym
+                const autoFit = () => {
+                    try {
+                        term.fit();
+                    } catch {
+                        setTimeout(() => { autoFit() }, 250);
+                    }
+                }
+
+                // Fit first time
+                autoFit();
+
+                // Xterm.js resize (giga chad)
+                window.addEventListener("resize", () => {
+                    autoFit();
+                })
+
+                // xterm.js input
+                document.onkeyup = (ev) => {
+                    // Control
+                    if (ev["keyCode"] == 17) return;
+
+                    // Shift
+                    if (ev["keyCode"] == 16) return;
+
+                    // Alt + tab prevent
+                    if (ev["keyCode"] == 9 && ev.altKey) return;
+
+                    // Terminate (ctrl + c)
+                    if (ev["keyCode"] === 67 && ev.ctrlKey && !ev.shiftKey) {
+                        sendCommand("\x03");
+                    }
+
+                    // Alt
+                    if (ev["keyCode"] == 18) return;
+
+                    // F1 => F12
+                    if (Number(ev["keyCode"]) && Number(ev["keyCode"]) >= 112 && Number(ev["keyCode"]) <= 123) return;
+
+                    // Some control key
+                    if (ev["keyCode"] === 145) return;
+                    if (ev["keyCode"] === 19) return;
+                    if (ev["keyCode"] === 45) return;
+                    if (ev["keyCode"] === 46) return;
+                    if (ev["keyCode"] === 36) return;
+                    if (ev["keyCode"] === 33) return;
+                    if (ev["keyCode"] === 34) return;
+                    if (ev["keyCode"] === 35) return;
+                }
+            }
+        </script>
+    </head>
+
+    <body>
+        <div id="login_socket">
+            <div class="frame">
+                <div class="frame_1">
+                    <p>Websocket IP: </p> <input class="inputBox" id="ws_ip"></input>
+                    <p>Websocket Port: </p> <input class="inputBox" id="ws_port"></input>
+                    <p>Websocket authToken: </p> <input type="password" class="inputBox" id="ws_token"></input>
+                </div>
+
+                <button class="connectBtn" onclick="serverConnect(document.getElementById('ws_ip').value?.toString(), document.getElementById('ws_port').value?.toString(), document.getElementById('ws_token').value?.toString())">Connect</button>
+            </div>
+        </div>
+
+        <div id="panel">
+            <button class="actionBtn" onclick="sendShutdown()">Stop</button>
+            <button class="actionBtn1" onclick="sendReboot()">Reboot</button>
+            <button class="autoScroll" onclick="if(autoScroll===false){autoScroll=true;document.getElementsByClassName('autoScroll')[0].style.background='#00ffae'}else{autoScroll=false;document.getElementsByClassName('autoScroll')[0].style.background='#141414'}">Auto Scroll</button>
+            <button class="resTerminal" onclick="sendRebootTerminal()">Restart Terminal</button>
+
+            <div id="cmdResponse"></div>
+            <input class="inputBox" id="cmdInput"></input>
+        </div>
+
+        <script>onLoad()</script>
+    </body>
+</html>
