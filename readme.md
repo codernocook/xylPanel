@@ -4,6 +4,10 @@
 
 - User JSON send to server => process
 
+# How to access to the panel
+Download the file: https://github.com/codernocook/xylPanel/releases/download/release-v1.0.0/xylPanelFrontend.html\
+Connect to the server with Websocket IP, and password
+
 # User JSON (The user json data will send to server)
 ```json
 {
