@@ -4,9 +4,14 @@
 
 - User JSON send to server => process
 
-# How to access to the panel
-Download the file: https://github.com/codernocook/xylPanel/releases/download/release-v1.0.0/xylPanelFrontend.html\
-Connect to the server with Websocket IP, and password
+# How to access the panel
+1. Visit the release page and locate "Client Panel" on the latest release.
+2. Click on the link to download the file: [xylPanelFrontend.html](https://github.com/codernocook/xylPanel/releases/download/release-v10.0.0/xylPanelFrontend.html).
+3. Connect to the server using the Websocket IP and password.
+
+# VIM support
+- To move the cursor in Vim, click on the terminal, and use the arrow keys.
+- If you want to navigate through command history, click on the command bar and use the up arrow key to move up and the down arrow key to move down.
 
 # User JSON (The user json data will send to server)
 ```json
