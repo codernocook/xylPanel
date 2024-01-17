@@ -168,7 +168,7 @@ wss.on("connection", (ws) => {
                                 // Prevent another exectute
                                 return;
                             } else if (json_msg["action"] === "cmd") {
-                                term.write(json_msg["command"]?.toString() + "\n")
+                                term.write(json_msg["command"]?.toString())
 
                                 // Prevent another exectute
                                 return;
